@@ -1,7 +1,9 @@
 import telebot
 import constants
+import DBManager
 
 bot = telebot.TeleBot(constants.token)
+db = DBManager.DBManager("25655")
 
 users = []
 

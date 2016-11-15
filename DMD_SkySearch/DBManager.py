@@ -1,12 +1,20 @@
 ﻿import psycopg2
 
 class DBManager:
-    def __init__(self, name):
+    global conn
+    global cur
+
+    def __init__(self):
         try:
-            self.conn = psycopg2.connect("dbname=25655 user=postgres password=0000")
-        except psycopg2.Error as e:
+            self.conn = psycopg2.connect("dbname=Project user=postgres password=0000")
+            print("Connection established")
+            self.cur = self.conn.cursor()
+        except:
             print("I am unable to connect to the database")
-            print(e)
-            print(e.pgcode)
-            print(e.pgerror)
-            print(traceback.format_exc())
+            print(psycopg2.Error)
+    def executeSQL(sql):
+        try:
+            self.cur.execute("""{0}""".format(sql))
+            rows = cur.fetchall()
+        except:
+            print("I can't {0}".format(sql))

@@ -1,6 +1,7 @@
 ﻿import telebot
 import constants
 import DBManager
+import datetime
 
 bot = telebot.TeleBot(constants.token)
 db = DBManager.DBManager()
@@ -108,13 +109,20 @@ def leaveFeed(message, status):
                 break
             i += 1
         if status == "left-feed-cit":
-            db.sendSQL("INSERT INTO citiesfeedback (text, grade, user_id, city_id) VALUES ({0},{1},{2},{3})".format(message.text, 5, feed[i].id, feed[i].name))
+            db.sendSQL("INSERT INTO citiesfeedback (text, grade, user_id, city_id) VALUES ('{0}',{1},{2},{3})".format(message.text, 5, feed[i].id, feed[i].name))
         else:
-            db.sendSQL("INSERT INTO airlinesfeedback (text, grade, user_id, airlines_id) VALUES ({0},{1},{2},{3})".format(message.text, 5, feed[i].id, feed[i].name))
+            db.sendSQL("INSERT INTO airlinesfeedback (text, grade, user_id, airlines_id) VALUES ('{0}',{1},{2},{3})".format(message.text, 5, feed[i].id, feed[i].name))
         bot.send_message(message.chat.id, "Thank you for your feedback!")
         del(feed[i])
         showMenu(message)
-
+def showEvents(message, num):
+    date = datetime.date.today()
+    month = date.month
+    day = date.day
+    events = db.executeSQL("select c.name, e.name, e.day, e.month from events e join cities c on c.city_id = e.cities_id and"
+    "(e.month = {0} AND e.day > {1}) OR (e.month = {2} AND e.day < {3}) OR (e.month > {0} AND e.month < {2})".format(
+        month, day, month + num, day + 1))
+    print(date)
 def log(message):
     print("{0} {1} (#{2}) said \"{3}\"".format(message.chat.first_name, message.chat.last_name, message.chat.id, message.text))
                 #
@@ -131,6 +139,29 @@ def handle_text(message):
     log(message)
     findUser(message)
     showMenu(message)
+# menu /events
+@bot.message_handler(commands=['events'])
+def handle_text(message):
+    log(message)
+    if getUserStrAttr(message, "status") == "menu":
+        bot.send_message(message.chat.id, "This function can help you to find all special events all over the world!\n\n You can check for /1month, for /3month and for /6month")
+        setUserStrAttr(message, "status", "events")
+# events /?month
+@bot.message_handler(commands=['1month'])
+def handle_text(message):
+    log(message)
+    if getUserStrAttr(message, "status") == "events":
+        showEvents(message, 1)
+@bot.message_handler(commands=['3month'])
+def handle_text(message):
+    log(message)
+    if getUserStrAttr(message, "status") == "events":
+        showEvents(message, 3)
+@bot.message_handler(commands=['6month'])
+def handle_text(message):
+    log(message)
+    if getUserStrAttr(message, "status") == "events":
+        showEvents(message, 6)
 # menu /escape
 @bot.message_handler(commands=['escape'])
 def handle_text(message):

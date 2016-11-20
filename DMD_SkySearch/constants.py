@@ -6,3 +6,10 @@ class City:
     def __init__(self, id, name):
         self.id = id
         self.name = name
+
+class Feed:
+    global id
+    global name
+    def __init__(self, id, name):
+        self.id = id
+        self.name = name

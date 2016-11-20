@@ -7,6 +7,7 @@ db = DBManager.DBManager()
 sql = "SELECT user_id, status from users"
 db_users = db.executeSQL(sql)
 from_city = []
+feed = []
 
 
 # SQL shit
@@ -84,6 +85,36 @@ def searchFlight(message):
         else:
             bot.send_message(message.chat.id, "Che-to kosyak :/")
             showMenu(message)
+def leaveFeed(message, status):
+    if status == "feed-cit" or status == "feed-air":
+        if status == "feed-cit":
+            ans = db.executeSQL("select city_id from cities where name = '{0}'".format(message.text))
+        else:
+            ans = db.executeSQL("select airlines_id from airlines where name = '{0}'".format(message.text))
+
+        if len(ans) > 0:
+            feed.append(constants.Feed(message.chat.id, ans[0][0]))
+            setUserStrAttr(message, "status", "left-" + status)
+            bot.send_message(message.chat.id, "So what you want to feedback?")
+        else:
+            if status == "feed-cit":
+                bot.send_message(message.chat.id, "Where is no such city\n/start to get back to menu or try again")
+            else:
+                bot.send_message(message.chat.id, "Where is no such airline\n/start to get back to menu or try again")
+    else:
+        i = 0
+        while (i < len(feed)):
+            if feed[i].id == message.chat.id:
+                break
+            i += 1
+        if status == "left-feed-cit":
+            db.sendSQL("INSERT INTO citiesfeedback (text, grade, user_id, city_id) VALUES ({0},{1},{2},{3})".format(message.text, 5, feed[i].id, feed[i].name))
+        else:
+            db.sendSQL("INSERT INTO airlinesfeedback (text, grade, user_id, airlines_id) VALUES ({0},{1},{2},{3})".format(message.text, 5, feed[i].id, feed[i].name))
+        bot.send_message(message.chat.id, "Thank you for your feedback!")
+        del(feed[i])
+        showMenu(message)
+
 def log(message):
     print("{0} {1} (#{2}) said \"{3}\"".format(message.chat.first_name, message.chat.last_name, message.chat.id, message.text))
                 #
@@ -104,7 +135,6 @@ def handle_text(message):
 @bot.message_handler(commands=['escape'])
 def handle_text(message):
     log(message)
-    findUser(message)
     if getUserStrAttr(message, "status") == "menu":
         bot.send_message(message.chat.id, "This function can help you to find all cities which available from your city!")
         if getUserNumAttr(message, "city") == 0:
@@ -116,14 +146,12 @@ def handle_text(message):
 @bot.message_handler(commands=['search'])
 def handle_text(message):
     log(message)
-    findUser(message)
     if getUserStrAttr(message, "status") == "menu":
         searchFlight(message)
 # menu /settings
 @bot.message_handler(commands=['settings'])
 def handle_text(message):
     log(message)
-    findUser(message)
     if getUserStrAttr(message, "status") == "menu":
         setUserStrAttr(message, "status", "settings")
         bot.send_message(message.chat.id, "/set_city - Set Home City\n\n/start - Back to Menu")
@@ -131,7 +159,6 @@ def handle_text(message):
 @bot.message_handler(commands=['set_city'])
 def handle_text(message):
     log(message)
-    findUser(message)
     if getUserStrAttr(message, "status") == "settings":
         bot.send_message(message.chat.id, "Input your Home City")
         setUserStrAttr(message, "status", "set_city")
@@ -139,7 +166,6 @@ def handle_text(message):
 @bot.message_handler(commands=['recommendations'])
 def handle_text(message):
     log(message)
-    findUser(message)
     if getUserStrAttr(message, "status") == "menu":
         bot.send_message(message.chat.id, "RECS")
         showMenu(message)
@@ -147,30 +173,47 @@ def handle_text(message):
 @bot.message_handler(commands=['feedback'])
 def handle_text(message):
     log(message)
-    findUser(message)
     if getUserStrAttr(message, "status") == "menu":
+        bot.send_message(message.chat.id, "Do you want leave feedback about /airlines or /cities?")
+        setUserStrAttr(message, "status", "feedback")
         '''if len(users[ans].feedback) > 0:
             bot.send_message(message.chat.id, "Your last feedback: \"{0}\"".format(users[ans].feedback))
         bot.send_message(message.chat.id, "Please input your feedback".format(users[ans].city))
         setStatus(message, "feedback")'''
+# feedback /airlines
+@bot.message_handler(commands=['airlines'])
+def handle_text(message):
+    log(message)
+    if getUserStrAttr(message, "status") == "feedback":
+        bot.send_message(message.chat.id, "About which airline?")
+        setUserStrAttr(message, "status", "feed-air")
+# feedback /airlines
+@bot.message_handler(commands=['cities'])
+def handle_text(message):
+    log(message)
+    if getUserStrAttr(message, "status") == "feedback":
+        bot.send_message(message.chat.id, "About which city?")
+        setUserStrAttr(message, "status", "feed-cit")
 # Usual text
 @bot.message_handler(content_types=['text'])
 def handle_text(message):
     log(message)
-    findUser(message)
-    if getUserStrAttr(message,"status") == "search_1" or getUserStrAttr(message,"status") == "search_2":
+    status = getUserStrAttr(message,"status")
+    if status == "search_1" or status == "search_2":
         searchFlight(message)
-    elif getUserStrAttr(message,"status") == "set_city":
+    elif status == "set_city":
         new_city = db.executeSQL("SELECT city_id from cities where name = '{0}'".format(message.text))
         setUserNumAttr(message,"city", new_city[0][0])
         bot.send_message(message.chat.id, "Home City set! Now your Home City is {0}".format(message.text))
         showMenu(message)
-    elif getUserStrAttr(message,"status") == "feedback":
-        '''users[ans].feedback = message.text
-        bot.send_message(message.chat.id, "Thank you for your feedback!".format(users[ans].city))'''
-        showMenu(message)
-    elif getUserStrAttr(message,"status") == "escape":
+    elif status == "escape":
         city_from = db.executeSQL("SELECT cities.name from cities where city_id = {0}".format(getUserNumAttr(message, "city")))
         showFlight(message, city_from[0][0],message.text)
+    elif status == "feed-air" or status == "feed-cit":
+        leaveFeed(message, status)
+    elif status == "left-feed-air" or status == "left-feed-cit":
+        leaveFeed(message, status)
+
+
 
 bot.polling(none_stop=True, interval=0)

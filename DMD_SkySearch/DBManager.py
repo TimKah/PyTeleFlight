@@ -1,24 +1,33 @@
 ﻿import psycopg2
 
 class DBManager:
-    def __init__(self, name):
+    global conn
+    global cur
+
+    def __init__(self):
         try:
             self.conn = psycopg2.connect("dbname=Project user=postgres password=0000")
             print("Connection established")
             self.cur = self.conn.cursor()
-            
-            try:
-                self.cur.execute("""SELECT * from {0}""".format("users"))
-            except:
-                print("I can't SELECT from users")
-
-            rows = self.cur.fetchall()
-            print("We have {0} rows".format(len(rows)))
-            
-            print("{0} - {1}".format(rows[0][1].replace(" ",""), len(rows[0][1].replace(" ",""))))
-        except psycopg2.Error as e:
+        except:
             print("I am unable to connect to the database")
+            print(psycopg2.Error)
+    def executeSQL(self, sql):
+        print("Trying {0}".format(sql))
+        try:
+            self.cur.execute("""{0}""".format(sql))
+            rows = self.cur.fetchall()
+            print("Made {0}".format(sql))
+            return rows
+        except psycopg2.Error as e:
+            print("I can't {0}".format(sql))
             print(e)
-            print(e.pgcode)
-            print(e.pgerror)
-            print(traceback.format_exc())
+    def sendSQL(self,sql):
+        print("Trying {0}".format(sql))
+        try:
+            self.cur.execute("""{0}""".format(sql))
+            self.conn.commit()
+            print("Made {0}".format(sql))
+        except psycopg2.Error as e:
+            print("I can't {0}".format(sql))
+            print(e)

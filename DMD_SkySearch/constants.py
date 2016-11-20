@@ -1,12 +1,8 @@
 ﻿token = "290131664:AAF2slLW_MdetguEo9Y9zNW6tvQuKwBUvHM"
 
-class User:
-    id = -1
-    status = ""
-    city = ""
-    from_city = ""
-    to_city = ""
-    feedback = ""
-    def __init__(self, id, status):
+class City:
+    global id
+    global name
+    def __init__(self, id, name):
         self.id = id
-        self.status = status
+        self.name = name

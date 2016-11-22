@@ -7,27 +7,27 @@ class DBManager:
     def __init__(self):
         try:
             self.conn = psycopg2.connect("dbname=Project user=postgres password=0000")
-            print("Connection established")
+            print("Connection with database established")
             self.cur = self.conn.cursor()
         except:
-            print("I am unable to connect to the database")
+            print("Unable to connect to the database")
             print(psycopg2.Error)
     def executeSQL(self, sql):
         print("Trying {0}".format(sql))
         try:
             self.cur.execute("""{0}""".format(sql))
             rows = self.cur.fetchall()
-            print("Made {0}".format(sql))
+            print("SQL fetched all")
             return rows
         except psycopg2.Error as e:
-            print("I can't {0}".format(sql))
+            print("Can't execute SQL")
             print(e)
     def sendSQL(self,sql):
         print("Trying {0}".format(sql))
         try:
             self.cur.execute("""{0}""".format(sql))
             self.conn.commit()
-            print("Made {0}".format(sql))
+            print("SQL commited")
         except psycopg2.Error as e:
-            print("I can't {0}".format(sql))
+            print("Can't send SQL")
             print(e)
